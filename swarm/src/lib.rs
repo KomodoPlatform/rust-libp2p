@@ -68,7 +68,8 @@ pub use behaviour::{
     NetworkBehaviourEventProcess,
     PollParameters,
     NotifyHandler,
-    DialPeerCondition
+    DialPeerCondition,
+    DisconnectPeerHandler
 };
 pub use protocols_handler::{
     IntoProtocolsHandler,
@@ -444,6 +445,16 @@ where TBehaviour: NetworkBehaviour<ProtocolsHandler = THandler>,
         }
     }
 
+    /// Disconnects a peer by its peer ID.
+    pub fn disconnect_peer_id(me: &mut Self, peer_id: PeerId) -> Result<(), ()> {
+        if let Some(peer) = me.network.peer(peer_id).into_connected() {
+            peer.disconnect();
+            return Ok(());
+        }
+
+        Err(())
+    }
+
     /// Bans a peer by its peer ID.
     ///
     /// Any incoming connection and any dialing attempt will immediately be rejected.
@@ -755,6 +766,20 @@ where TBehaviour: NetworkBehaviour<ProtocolsHandler = THandler>,
                             this.behaviour.inject_new_external_addr(&addr);
                         }
                         this.external_addrs.add(addr);
+                    }
+                },
+                Poll::Ready(NetworkBehaviourAction::DisconnectPeer { peer_id, handler }) => {
+                    if let Some(mut peer) = this.network.peer(peer_id).into_connected() {
+                        match handler {
+                            DisconnectPeerHandler::One(connection_id) => {
+                                if let Some(conn) = peer.connection(connection_id) {
+                                    conn.start_close();
+                                }
+                            }
+                            DisconnectPeerHandler::All => {
+                                peer.disconnect();
+                            }
+                        }
                     }
                 },
             }

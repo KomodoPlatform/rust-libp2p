@@ -1396,6 +1396,9 @@ impl NetworkBehaviour for Gossipsub {
                 NetworkBehaviourAction::ReportObservedAddr { address } => {
                     NetworkBehaviourAction::ReportObservedAddr { address }
                 }
+                NetworkBehaviourAction::DisconnectPeer { peer_id, handler } => {
+                    NetworkBehaviourAction::DisconnectPeer { peer_id, handler }
+                }
             });
         }
 

@@ -279,6 +279,15 @@ pub enum NetworkBehaviourAction<TInEvent, TOutEvent> {
         /// The observed address of the local node.
         address: Multiaddr,
     },
+
+    /// Instructs the `Swarm` to initiate a graceful close of the connection
+    /// with a peer.
+    DisconnectPeer {
+        /// The peer to disconnect.
+        peer_id: PeerId,
+        /// The ID of the connection whose `ProtocolsHandler` to disconnect.
+        handler: DisconnectPeerHandler,
+    }
 }
 
 /// The options w.r.t. which connection handlers to notify of an event.
@@ -321,5 +330,20 @@ pub enum DialPeerCondition {
 impl Default for DialPeerCondition {
     fn default() -> Self {
         DialPeerCondition::Disconnected
+    }
+}
+
+/// The options which connection handlers to disconnect.
+#[derive(Debug, Clone)]
+pub enum DisconnectPeerHandler {
+    /// Disconnect a particular connection handler.
+    One(ConnectionId),
+    /// Disconnect all connection handlers.
+    All,
+}
+
+impl Default for DisconnectPeerHandler {
+    fn default() -> Self {
+        DisconnectPeerHandler::All
     }
 }
