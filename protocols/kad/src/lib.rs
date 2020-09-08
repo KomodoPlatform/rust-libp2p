@@ -23,6 +23,7 @@
 // TODO: we allow dead_code for now because this library contains a lot of unused code that will
 //       be useful later for record store
 #![allow(dead_code)]
+#![feature(assoc_int_consts)]
 
 pub mod handler;
 pub mod kbucket;

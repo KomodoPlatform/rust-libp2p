@@ -525,7 +525,9 @@ where
                 | NetworkBehaviourAction::NotifyHandler { peer_id, handler, event } =>
                     NetworkBehaviourAction::NotifyHandler { peer_id, handler, event },
                 | NetworkBehaviourAction::ReportObservedAddr { address } =>
-                    NetworkBehaviourAction::ReportObservedAddr { address }
+                    NetworkBehaviourAction::ReportObservedAddr { address },
+                | NetworkBehaviourAction::DisconnectPeer { peer_id, handler } =>
+                    NetworkBehaviourAction::DisconnectPeer { peer_id, handler },
             };
 
             return Poll::Ready(event)
