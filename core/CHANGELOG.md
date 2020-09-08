@@ -1,4 +1,28 @@
-# 0.21.0 [unreleased]
+# 0.22.0 [unreleased]
+
+- Allow any closure to be passed as an executor.
+  [PR 1686](https://github.com/libp2p/rust-libp2p/pull/1686)
+
+- Remove `PeerId` compatibility mode for "identity" and SHA2 hashes.
+  Historically, before 0.12, `PeerId`s were incorrectly always hashed with SHA2.
+  Starting from version 0.13, rust-libp2p accepted both hashed and non-hashed keys as
+  input.  Starting from version 0.16 rust-libp2p compared `PeerId`s of "identity" and
+  SHA2 hashes equal, which made it possible to connect through secio or noise to nodes
+  with an identity hash for the same peer ID. Starting from version 0.17, rust-libp2p
+  switched to not hashing the key (i.e. the correct behaviour) while retaining
+  equality between peer IDs using the "identity" hash and SHA2. Finally, with
+  this release, that will no longer be the case and it is assumed that peer IDs
+  whose length is less or equal to 42 bytes always use the "identity" hash so
+  two peer IDs are equal if and only if they use the same hash algorithm and
+  have the same hash digest. [PR 1608](https://github.com/libp2p/rust-libp2p/pull/1608).
+
+# 0.21.0 [2020-08-18]
+
+- Remove duplicates when performing address translation
+  [PR 1697](https://github.com/libp2p/rust-libp2p/pull/1697).
+
+- Add `transport::Builder::multiplex_ext` for further customisation during
+`StreamMuxer` creation. [PR 1691](https://github.com/libp2p/rust-libp2p/pull/1691).
 
 - Refactoring of connection close and disconnect behaviour.  In particular, the former
   `NetworkEvent::ConnectionError` is now `NetworkEvent::ConnectionClosed` with the `error`
@@ -11,7 +35,10 @@
   a peer takes effect immediately without an orderly connection shutdown.
   See [PR 1619](https://github.com/libp2p/rust-libp2p/pull/1619) for further details.
 
-# 0.20.1 [2020-17-17]
+- Add `ConnectedPoint::get_remote_address`
+  ([PR 1649](https://github.com/libp2p/rust-libp2p/pull/1649)).
+
+# 0.20.1 [2020-07-17]
 
 - Update ed25519-dalek dependency.
 

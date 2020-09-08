@@ -32,6 +32,7 @@ use futures::{
 };
 use futures_timer::Delay;
 use libp2p_core::{
+    connection::{ConnectedPoint, ConnectionId},
     PeerId,
     Transport,
     identity,
@@ -40,7 +41,7 @@ use libp2p_core::{
     muxing::StreamMuxerBox,
     upgrade
 };
-use libp2p_secio::SecioConfig;
+use libp2p_noise as noise;
 use libp2p_swarm::Swarm;
 use libp2p_yamux as yamux;
 use quickcheck::*;
@@ -57,9 +58,10 @@ fn build_node() -> (Multiaddr, TestSwarm) {
 fn build_node_with_config(cfg: KademliaConfig) -> (Multiaddr, TestSwarm) {
     let local_key = identity::Keypair::generate_ed25519();
     let local_public_key = local_key.public();
+    let noise_keys = noise::Keypair::<noise::X25519>::new().into_authentic(&local_key).unwrap();
     let transport = MemoryTransport::default()
         .upgrade(upgrade::Version::V1)
-        .authenticate(SecioConfig::new(local_key))
+        .authenticate(noise::NoiseConfig::xx(noise_keys).into_authenticated())
         .multiplex(yamux::Config::default())
         .map(|(p, m), _| (p, StreamMuxerBox::new(m)))
         .map_err(|e| -> io::Error { panic!("Failed to create transport: {:?}", e); })
@@ -1098,4 +1100,42 @@ fn manual_bucket_inserts() {
         }
         Poll::Pending
     }));
+}
+
+#[test]
+fn network_behaviour_inject_address_change() {
+    let local_peer_id = PeerId::random();
+
+    let remote_peer_id = PeerId::random();
+    let connection_id = ConnectionId::new(1);
+    let old_address: Multiaddr = Protocol::Memory(1).into();
+    let new_address: Multiaddr = Protocol::Memory(2).into();
+
+    let mut kademlia = Kademlia::new(
+        local_peer_id.clone(),
+        MemoryStore::new(local_peer_id),
+    );
+
+    kademlia.inject_connection_established(
+        &remote_peer_id,
+        &connection_id,
+        &ConnectedPoint::Dialer { address:  old_address.clone() },
+    );
+
+    assert_eq!(
+        vec![old_address.clone()],
+        kademlia.addresses_of_peer(&remote_peer_id),
+    );
+
+    kademlia.inject_address_change(
+        &remote_peer_id,
+        &connection_id,
+        &ConnectedPoint::Dialer { address: old_address.clone() },
+        &ConnectedPoint::Dialer {  address: new_address.clone() },
+    );
+
+    assert_eq!(
+        vec![new_address.clone()],
+        kademlia.addresses_of_peer(&remote_peer_id),
+    );
 }
