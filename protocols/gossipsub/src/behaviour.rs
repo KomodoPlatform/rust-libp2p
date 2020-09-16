@@ -1457,7 +1457,7 @@ impl fmt::Debug for GossipsubRpc {
 }
 
 /// Event that can happen on the gossipsub behaviour.
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub enum GossipsubEvent {
     /// A message has been received. This contains the PeerId that we received the message from,
     /// the message id (used if the application layer needs to propagate the message) and the
@@ -1537,4 +1537,3 @@ impl fmt::Debug for PublishConfig {
         }
     }
 }
-
