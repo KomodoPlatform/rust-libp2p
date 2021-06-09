@@ -1,6 +1,5 @@
 use std::borrow::Cow;
-use std::fmt::Debug;
-use serde::export::Formatter;
+use std::fmt::{Debug, Formatter};
 use std::fmt;
 
 /// Represents an Onion v3 address
