@@ -53,8 +53,12 @@ impl Zeroize for X25519Spec {
 impl Keypair<X25519Spec> {
     /// Create a new X25519 keypair.
     pub fn new() -> Keypair<X25519Spec> {
+        Self::with_rng(&mut rand::thread_rng())
+    }
+
+    pub fn with_rng<R: Rng>(rng: &mut R) -> Keypair<X25519Spec> {
         let mut sk_bytes = [0u8; 32];
-        rand::thread_rng().fill(&mut sk_bytes);
+        rng.fill(&mut sk_bytes);
         let sk = SecretKey(X25519Spec(sk_bytes)); // Copy
         sk_bytes.zeroize();
         Self::from(sk)
@@ -117,7 +121,7 @@ impl Protocol<X25519Spec> for X25519Spec {
 
     fn public_from_bytes(bytes: &[u8]) -> Result<PublicKey<X25519Spec>, NoiseError> {
         if bytes.len() != 32 {
-            return Err(NoiseError::InvalidKey)
+            return Err(NoiseError::InvalidKey);
         }
         let mut pk = [0u8; 32];
         pk.copy_from_slice(bytes);
@@ -162,9 +166,9 @@ impl snow::types::Dh for Keypair<X25519Spec> {
 
     fn dh(&self, pk: &[u8], shared_secret: &mut [u8]) -> Result<(), ()> {
         let mut p = [0; 32];
-        p.copy_from_slice(&pk[.. 32]);
+        p.copy_from_slice(&pk[..32]);
         let ss = x25519((self.secret.0).0, p);
-        shared_secret[.. 32].copy_from_slice(&ss[..]);
+        shared_secret[..32].copy_from_slice(&ss[..]);
         Ok(())
     }
 }

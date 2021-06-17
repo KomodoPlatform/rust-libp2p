@@ -196,6 +196,8 @@ impl Message {
             // it ends with a line feed.
             let (len, tail) = uvi::decode::usize(remaining)?;
             if len == 0 || len > tail.len() || tail[len - 1] != b'\n' {
+                log::debug!("multistream-select/protocol:199] The whole message: {:?}", msg);
+                log::debug!("multistream-select/protocol:200] len: {:?}, rem: {:?}", len, tail);
                 return Err(ProtocolError::InvalidMessage)
             }
 

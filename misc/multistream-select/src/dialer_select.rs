@@ -260,7 +260,10 @@ where
                             let protocol = this.protocols.next().ok_or(NegotiationError::Failed)?;
                             *this.state = SeqState::SendProtocol { io, protocol }
                         }
-                        _ => return Poll::Ready(Err(ProtocolError::InvalidMessage.into()))
+                        message => {
+                            log::debug!("dialer_select:264] received message: {:?}", message);
+                            return Poll::Ready(Err(ProtocolError::InvalidMessage.into()));
+                        }
                     }
                 }
 
@@ -383,7 +386,10 @@ where
                                 String::from_utf8_lossy(protocol.as_ref()));
                             *this.state = ParState::SendProtocol { io, protocol };
                         }
-                        _ => return Poll::Ready(Err(ProtocolError::InvalidMessage.into())),
+                        message => {
+                            log::debug!("dialer_select:378] received message: {:?}", message);
+                            return Poll::Ready(Err(ProtocolError::InvalidMessage.into()));
+                        }
                     }
                 }
 

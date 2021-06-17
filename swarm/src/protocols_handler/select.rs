@@ -208,6 +208,7 @@ where
                         e2 = NegotiationError::ProtocolError(ProtocolError::IoError(e))
                     }
                     ProtocolError::InvalidMessage => {
+                        log::debug!("protocols_handler/select:211] on InvalidMessage");
                         e1 = NegotiationError::ProtocolError(ProtocolError::InvalidMessage);
                         e2 = NegotiationError::ProtocolError(ProtocolError::InvalidMessage)
                     }
