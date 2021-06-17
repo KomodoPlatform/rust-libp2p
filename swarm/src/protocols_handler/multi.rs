@@ -200,6 +200,7 @@ where
                         }
                     ProtocolError::InvalidMessage =>
                         for (k, h) in &mut self.handlers {
+                            log::debug!("protocols_handler/multi:203] on InvalidMessage");
                             if let Some(i) = info.take(k) {
                                 let e = NegotiationError::ProtocolError(ProtocolError::InvalidMessage);
                                 h.inject_listen_upgrade_error(i, ProtocolsHandlerUpgrErr::Upgrade(UpgradeError::Select(e)))

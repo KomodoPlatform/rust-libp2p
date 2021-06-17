@@ -251,7 +251,7 @@ where
                             *this.state = SeqState::SendProtocol { io, protocol }
                         }
                         message => {
-                            log::error!("dialer_select:254] received message: {:?}", message);
+                            log::debug!("dialer_select:254] received message: {:?}", message);
                             return Poll::Ready(Err(ProtocolError::InvalidMessage.into()));
                         }
                     }
@@ -375,7 +375,7 @@ where
                             *this.state = ParState::SendProtocol { io, protocol };
                         }
                         message => {
-                            log::error!("dialer_select:378] received message: {:?}", message);
+                            log::debug!("dialer_select:378] received message: {:?}", message);
                             return Poll::Ready(Err(ProtocolError::InvalidMessage.into()));
                         }
                     }

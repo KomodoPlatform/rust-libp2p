@@ -609,6 +609,7 @@ where TBehaviour: NetworkBehaviour<ProtocolsHandler = THandler>,
                 },
                 Poll::Ready(NetworkEvent::IncomingConnectionError { local_addr, send_back_addr, error }) => {
                     log::debug!("Incoming connection failed: {:?}", error);
+                    log::debug!("Test");
                     return Poll::Ready(SwarmEvent::IncomingConnectionError {
                         local_addr,
                         send_back_addr,

@@ -251,8 +251,8 @@ impl Message {
         for _ in 0 .. num_protocols {
             let (len, rem) = uvi::decode::usize(remaining)?;
             if len == 0 || len > rem.len() || rem[len - 1] != b'\n' {
-                log::error!("multistream-select/protocol:254] The whole message: {:?}", msg);
-                log::error!("multistream-select/protocol:255] len: {:?}, rem: {:?}", len, rem);
+                log::debug!("multistream-select/protocol:254] The whole message: {:?}", msg);
+                log::debug!("multistream-select/protocol:255] len: {:?}, rem: {:?}", len, rem);
                 return Err(ProtocolError::InvalidMessage)
             }
             let p = Protocol::try_from(Bytes::copy_from_slice(&rem[.. len - 1]))?;
