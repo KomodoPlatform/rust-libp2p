@@ -114,7 +114,8 @@ where
                         Poll::Ready(Some(Ok(Message::Header(version)))) => {
                             *this.state = State::SendHeader { io, version }
                         }
-                        Poll::Ready(Some(Ok(_))) => {
+                        Poll::Ready(Some(Ok(message))) => {
+                            log::error!("listener_select:118] received message: {:?}", message);
                             return Poll::Ready(Err(ProtocolError::InvalidMessage.into()))
                         },
                         Poll::Ready(Some(Err(err))) => return Poll::Ready(Err(From::from(err))),
@@ -189,7 +190,10 @@ where
 
                             *this.state = State::SendMessage { io, message, protocol };
                         }
-                        _ => return Poll::Ready(Err(ProtocolError::InvalidMessage.into()))
+                        message => {
+                            log::error!("listener_select:194] received message: {:?}", message);
+                            return Poll::Ready(Err(ProtocolError::InvalidMessage.into()));
+                        }
                     }
                 }
 
