@@ -158,7 +158,7 @@ where
 
                     let upgrade = async move {
                         let stream = upgrade.map_err(Error::Transport).await?;
-                        trace!("incoming connection from {}", remote1);
+                        log::warn!("incoming connection from {}", remote1);
 
                         let stream =
                             if use_tls { // begin TLS session
@@ -166,7 +166,7 @@ where
                                     .server
                                     .expect("for use_tls we checked server is not none");
 
-                                trace!("awaiting TLS handshake with {}", remote1);
+                                log::warn!("awaiting TLS handshake with {}", remote1);
 
                                 let stream = server.accept(stream)
                                     .map_err(move |e| {
@@ -183,7 +183,7 @@ where
                                 EitherOutput::Second(stream)
                             };
 
-                        trace!("receiving websocket handshake request from {}", remote2);
+                        log::warn!("receiving websocket handshake request from {}", remote2);
 
                         let mut server = handshake::Server::new(stream);
 
@@ -198,7 +198,7 @@ where
                             request.into_key()
                         };
 
-                        trace!("accepting websocket handshake request from {}", remote2);
+                        log::warn!("accepting websocket handshake request from {}", remote2);
 
                         let response =
                             handshake::server::Response::Accept {
