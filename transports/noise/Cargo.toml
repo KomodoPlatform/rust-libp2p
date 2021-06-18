@@ -16,6 +16,7 @@ libp2p-core = { version = "0.29.0", path = "../../core" }
 log = "0.4"
 prost = "0.7"
 rand = "0.8.3"
+rand07 = { package = "rand", version = "0.7", features = ["wasm-bindgen"] }
 sha2 = "0.9.1"
 static_assertions = "1"
 x25519-dalek = "1.1.0"

@@ -25,7 +25,7 @@
 use crate::{NoiseConfig, NoiseError, Protocol, ProtocolParams};
 use libp2p_core::UpgradeInfo;
 use libp2p_core::identity;
-use rand::Rng;
+use rand07::Rng;
 use x25519_dalek::{X25519_BASEPOINT_BYTES, x25519};
 use zeroize::Zeroize;
 
@@ -53,7 +53,7 @@ impl Zeroize for X25519Spec {
 impl Keypair<X25519Spec> {
     /// Create a new X25519 keypair.
     pub fn new() -> Keypair<X25519Spec> {
-        Self::with_rng(&mut rand::thread_rng())
+        Self::with_rng(&mut rand07::thread_rng())
     }
 
     pub fn with_rng<R: Rng>(rng: &mut R) -> Keypair<X25519Spec> {
