@@ -387,7 +387,7 @@ where
                             *this.state = ParState::SendProtocol { io, protocol };
                         }
                         message => {
-                            log::debug!("dialer_select:378] received message: {:?}", message);
+                            log::debug!("dialer_select:390] received message: {:?}", message);
                             return Poll::Ready(Err(ProtocolError::InvalidMessage.into()));
                         }
                     }
