@@ -23,8 +23,7 @@
 pub mod store;
 
 use bytes::Bytes;
-use libp2p_core::{PeerId, Multiaddr};
-use multihash::Multihash;
+use libp2p_core::{PeerId, Multiaddr, multihash::Multihash};
 use std::borrow::Borrow;
 use std::hash::{Hash, Hasher};
 use wasm_timer::Instant;
@@ -65,7 +64,7 @@ impl From<Vec<u8>> for Key {
 
 impl From<Multihash> for Key {
     fn from(m: Multihash) -> Key {
-        Key::from(m.into_bytes())
+        Key::from(m.to_bytes())
     }
 }
 
@@ -104,7 +103,11 @@ impl Record {
 
 /// A record stored in the DHT whose value is the ID of a peer
 /// who can provide the value on-demand.
-#[derive(Clone, Debug, PartialEq, Eq)]
+///
+/// Note: Two [`ProviderRecord`]s as well as their corresponding hashes are
+/// equal iff their `key` and `provider` fields are equal. See the [`Hash`] and
+/// [`PartialEq`] implementations.
+#[derive(Clone, Debug)]
 pub struct ProviderRecord {
     /// The key whose value is provided by the provider.
     pub key: Key,
@@ -122,6 +125,14 @@ impl Hash for ProviderRecord {
         self.provider.hash(state);
     }
 }
+
+impl PartialEq for ProviderRecord {
+    fn eq(&self, other: &Self) -> bool {
+        self.key == other.key && self.provider == other.provider
+    }
+}
+
+impl Eq for ProviderRecord {}
 
 impl ProviderRecord {
     /// Creates a new provider record for insertion into a `RecordStore`.
@@ -147,14 +158,14 @@ impl ProviderRecord {
 mod tests {
     use super::*;
     use quickcheck::*;
-    use multihash::{wrap, Code};
+    use libp2p_core::multihash::Code;
     use rand::Rng;
     use std::time::Duration;
 
     impl Arbitrary for Key {
         fn arbitrary<G: Gen>(_: &mut G) -> Key {
             let hash = rand::thread_rng().gen::<[u8; 32]>();
-            Key::from(wrap(Code::Sha2_256, &hash))
+            Key::from(Multihash::wrap(Code::Sha2_256.into(), &hash).unwrap())
         }
     }
 
@@ -188,4 +199,3 @@ mod tests {
         }
     }
 }
-

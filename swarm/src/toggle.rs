@@ -33,7 +33,7 @@ use libp2p_core::{
     ConnectedPoint,
     PeerId,
     Multiaddr,
-    connection::ConnectionId,
+    connection::{ConnectionId, ListenerId},
     either::{EitherError, EitherOutput},
     upgrade::{DeniedUpgrade, EitherUpgrade}
 };
@@ -110,6 +110,12 @@ where
         }
     }
 
+    fn inject_address_change(&mut self, peer_id: &PeerId, connection: &ConnectionId, old: &ConnectedPoint, new: &ConnectedPoint) {
+        if let Some(inner) = self.inner.as_mut() {
+            inner.inject_address_change(peer_id, connection, old, new)
+        }
+    }
+
     fn inject_event(
         &mut self,
         peer_id: PeerId,
@@ -133,21 +139,45 @@ where
         }
     }
 
-    fn inject_new_listen_addr(&mut self, addr: &Multiaddr) {
+    fn inject_new_listener(&mut self, id: ListenerId) {
         if let Some(inner) = self.inner.as_mut() {
-            inner.inject_new_listen_addr(addr)
+            inner.inject_new_listener(id)
         }
     }
 
-    fn inject_expired_listen_addr(&mut self, addr: &Multiaddr) {
+    fn inject_new_listen_addr(&mut self, id: ListenerId, addr: &Multiaddr) {
         if let Some(inner) = self.inner.as_mut() {
-            inner.inject_expired_listen_addr(addr)
+            inner.inject_new_listen_addr(id, addr)
+        }
+    }
+
+    fn inject_expired_listen_addr(&mut self, id: ListenerId, addr: &Multiaddr) {
+        if let Some(inner) = self.inner.as_mut() {
+            inner.inject_expired_listen_addr(id, addr)
         }
     }
 
     fn inject_new_external_addr(&mut self, addr: &Multiaddr) {
         if let Some(inner) = self.inner.as_mut() {
             inner.inject_new_external_addr(addr)
+        }
+    }
+
+    fn inject_expired_external_addr(&mut self, addr: &Multiaddr) {
+        if let Some(inner) = self.inner.as_mut() {
+            inner.inject_expired_external_addr(addr)
+        }
+    }
+
+    fn inject_listener_error(&mut self, id: ListenerId, err: &(dyn std::error::Error + 'static)) {
+        if let Some(inner) = self.inner.as_mut() {
+            inner.inject_listener_error(id, err)
+        }
+    }
+
+    fn inject_listener_closed(&mut self, id: ListenerId, reason: Result<(), &std::io::Error>) {
+        if let Some(inner) = self.inner.as_mut() {
+            inner.inject_listener_closed(id, reason)
         }
     }
 
@@ -241,7 +271,7 @@ where
                 .expect("Can't receive an inbound substream if disabled; QED")
                 .inject_fully_negotiated_inbound(out, info)
         } else {
-            panic!("Unpexpected Either::Right in enabled `inject_fully_negotiated_inbound`.")
+            panic!("Unexpected Either::Right in enabled `inject_fully_negotiated_inbound`.")
         }
     }
 
@@ -271,6 +301,21 @@ where
     }
 
     fn inject_listen_upgrade_error(&mut self, info: Self::InboundOpenInfo, err: ProtocolsHandlerUpgrErr<<Self::InboundProtocol as InboundUpgradeSend>::Error>) {
+        let (inner, info) = match (self.inner.as_mut(), info) {
+            (Some(inner), Either::Left(info)) => (inner, info),
+            // Ignore listen upgrade errors in disabled state.
+            (None, Either::Right(())) => return,
+            (Some(_), Either::Right(())) => panic!(
+                "Unexpected `Either::Right` inbound info through \
+                 `inject_listen_upgrade_error` in enabled state.",
+            ),
+            (None, Either::Left(_)) => panic!(
+                "Unexpected `Either::Left` inbound info through \
+                 `inject_listen_upgrade_error` in disabled state.",
+            ),
+
+        };
+
         let err = match err {
             ProtocolsHandlerUpgrErr::Timeout => ProtocolsHandlerUpgrErr::Timeout,
             ProtocolsHandlerUpgrErr::Timer => ProtocolsHandlerUpgrErr::Timer,
@@ -280,13 +325,8 @@ where
                     EitherError::B(v) => void::unreachable(v)
                 }))
         };
-        if let Either::Left(info) = info {
-            self.inner.as_mut()
-                .expect("Can't receive an inbound substream if disabled; QED")
-                .inject_listen_upgrade_error(info, err)
-        } else {
-            panic!("Unexpected Either::Right on enabled `inject_listen_upgrade_error`.")
-        }
+
+        inner.inject_listen_upgrade_error(info, err)
     }
 
     fn connection_keep_alive(&self) -> KeepAlive {
@@ -305,5 +345,34 @@ where
         } else {
             Poll::Pending
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::protocols_handler::DummyProtocolsHandler;
+
+    /// A disabled [`ToggleProtoHandler`] can receive listen upgrade errors in
+    /// the following two cases:
+    ///
+    /// 1. Protocol negotiation on an incoming stream failed with no protocol
+    ///    being agreed on.
+    ///
+    /// 2. When combining [`ProtocolsHandler`] implementations a single
+    ///    [`ProtocolsHandler`] might be notified of an inbound upgrade error
+    ///    unrelated to its own upgrade logic. For example when nesting a
+    ///    [`ToggleProtoHandler`] in a
+    ///    [`ProtocolsHandlerSelect`](crate::protocols_handler::ProtocolsHandlerSelect)
+    ///    the former might receive an inbound upgrade error even when disabled.
+    ///
+    /// [`ToggleProtoHandler`] should ignore the error in both of these cases.
+    #[test]
+    fn ignore_listen_upgrade_error_when_disabled() {
+        let mut handler = ToggleProtoHandler::<DummyProtocolsHandler> {
+            inner: None,
+        };
+
+        handler.inject_listen_upgrade_error(Either::Right(()), ProtocolsHandlerUpgrErr::Timeout);
     }
 }

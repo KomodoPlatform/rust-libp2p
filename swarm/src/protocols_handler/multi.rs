@@ -40,15 +40,17 @@ use libp2p_core::{ConnectedPoint, Multiaddr, PeerId};
 use libp2p_core::upgrade::{ProtocolName, UpgradeError, NegotiationError, ProtocolError};
 use rand::Rng;
 use std::{
+    cmp,
     collections::{HashMap, HashSet},
     error,
     fmt,
     hash::Hash,
     iter::{self, FromIterator},
-    task::{Context, Poll}
+    task::{Context, Poll},
+    time::Duration
 };
 
-/// A [`ProtocolsHandler`] for multiple other `ProtocolsHandler`s.
+/// A [`ProtocolsHandler`] for multiple `ProtocolsHandler`s of the same type.
 #[derive(Clone)]
 pub struct MultiHandler<K, H> {
     handlers: HashMap<K, H>
@@ -79,7 +81,7 @@ where
         I: IntoIterator<Item = (K, H)>
     {
         let m = MultiHandler { handlers: HashMap::from_iter(iter) };
-        uniq_proto_names(m.handlers.values().map(|h| h.listen_protocol().into_upgrade().1))?;
+        uniq_proto_names(m.handlers.values().map(|h| h.listen_protocol().into_upgrade().0))?;
         Ok(m)
     }
 }
@@ -100,17 +102,22 @@ where
     type OutboundOpenInfo = (K, <H as ProtocolsHandler>::OutboundOpenInfo);
 
     fn listen_protocol(&self) -> SubstreamProtocol<Self::InboundProtocol, Self::InboundOpenInfo> {
-        let (upgrade, info) = self.handlers.iter()
-            .map(|(k, h)| {
-                let (_, u, i) = h.listen_protocol().into_upgrade();
-                (k.clone(), (u, i))
+        let (upgrade, info, timeout) = self.handlers.iter()
+            .map(|(key, handler)| {
+                let proto = handler.listen_protocol();
+                let timeout = *proto.timeout();
+                let (upgrade, info) = proto.into_upgrade();
+                (key.clone(), (upgrade, info, timeout))
             })
-            .fold((Upgrade::new(), Info::new()), |(mut upg, mut inf), (k, (u, i))| {
-                upg.upgrades.push((k.clone(), u));
-                inf.infos.push((k, i));
-                (upg, inf)
-            });
-        SubstreamProtocol::new(upgrade, info)
+            .fold((Upgrade::new(), Info::new(), Duration::from_secs(0)),
+                |(mut upg, mut inf, mut timeout), (k, (u, i, t))| {
+                    upg.upgrades.push((k.clone(), u));
+                    inf.infos.push((k, i));
+                    timeout = cmp::max(timeout, t);
+                    (upg, inf, timeout)
+                }
+            );
+        SubstreamProtocol::new(upgrade, info).with_timeout(timeout)
     }
 
     fn inject_fully_negotiated_outbound (

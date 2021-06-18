@@ -1,4 +1,92 @@
-# 0.22.2 [unreleased]
+# 0.29.0 [unreleased]
+
+- Switch from `parity-multiaddr` to upstream `multiaddr`.
+
+- Update dependencies.
+
+- Implement `Keypair::from_protobuf_encoding` for ed25519 keys (see [PR 2090]).
+
+[PR 2090]: https://github.com/libp2p/rust-libp2p/pull/2090
+
+# 0.28.3 [2021-04-26]
+
+- Fix build with secp256k1 disabled [PR 2057](https://github.com/libp2p/rust-libp2p/pull/2057].
+
+# 0.28.2 [2021-04-13]
+
+- Update dependencies.
+
+# 0.28.1 [2021-03-17]
+
+- Update `paritytech-multiaddr` to `>=v0.11.2`.
+
+# 0.28.0 [2021-03-17]
+
+- `Network::dial()` understands `/p2p` addresses and `Transport::dial`
+  gets a "fully qualified" `/p2p` address when dialing a specific peer,
+  whether through the `Network::peer()` API or via `Network::dial()`
+  with a `/p2p` address.
+
+- `Network::dial()` and `network::Peer::dial()` return a `DialError`
+  on error.
+
+- Shorten and unify `Debug` impls of public keys.
+
+# 0.27.1 [2021-02-15]
+
+- Update dependencies.
+
+# 0.27.0 [2021-01-12]
+
+- (Re)add `Transport::address_translation` to permit transport-specific
+  translations of observed addresses onto listening addresses.
+  [PR 1887](https://github.com/libp2p/rust-libp2p/pull/1887)
+
+- Update dependencies.
+
+# 0.26.0 [2020-12-17]
+
+- Make `PeerId` be `Copy`, including small `PeerId` API changes.
+  [PR 1874](https://github.com/libp2p/rust-libp2p/pull/1874/).
+
+# 0.25.2 [2020-12-02]
+
+- Require `multistream-select-0.9.1`.
+
+# 0.25.1 [2020-11-25]
+
+- Add missing multiaddr upgrade.
+
+# 0.25.0 [2020-11-25]
+
+- The `NetworkConfig` API is now a builder that moves `self`.
+  [PR 1848](https://github.com/libp2p/rust-libp2p/pull/1848/).
+
+- New configurable connection limits for established connections and
+  dedicated connection counters. Removed the connection limit dedicated
+  to outgoing pending connection _per peer_. Connection limits are now
+  represented by `u32` intead of `usize` types.
+  [PR 1848](https://github.com/libp2p/rust-libp2p/pull/1848/).
+
+- Update `multihash`.
+
+- Update `multistream-select`.
+
+# 0.24.0 [2020-11-09]
+
+- Remove `ConnectionInfo` trait and replace it with `PeerId`
+  everywhere. This was already effectively the case because
+  `ConnectionInfo` was implemented on `PeerId`.
+
+# 0.23.1 [2020-10-20]
+
+- Update dependencies.
+
+# 0.23.0 [2020-10-16]
+
+- Rework transport boxing and move timeout configuration
+  to the transport builder.
+  [PR 1794](https://github.com/libp2p/rust-libp2p/pull/1794).
 
 - Update dependencies.
 
