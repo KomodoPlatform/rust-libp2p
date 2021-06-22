@@ -25,7 +25,7 @@
 use crate::{NoiseConfig, NoiseError, Protocol, ProtocolParams};
 use libp2p_core::UpgradeInfo;
 use libp2p_core::identity;
-use rand07::Rng;
+use rand::Rng;
 use x25519_dalek::{X25519_BASEPOINT_BYTES, x25519};
 use zeroize::Zeroize;
 
@@ -53,12 +53,8 @@ impl Zeroize for X25519Spec {
 impl Keypair<X25519Spec> {
     /// Create a new X25519 keypair.
     pub fn new() -> Keypair<X25519Spec> {
-        Self::with_rng(&mut rand07::thread_rng())
-    }
-
-    pub fn with_rng<R: Rng>(rng: &mut R) -> Keypair<X25519Spec> {
         let mut sk_bytes = [0u8; 32];
-        rng.fill(&mut sk_bytes);
+        rand::thread_rng().fill(&mut sk_bytes);
         let sk = SecretKey(X25519Spec(sk_bytes)); // Copy
         sk_bytes.zeroize();
         Self::from(sk)
