@@ -1,3 +1,44 @@
+# 0.33.0 [unreleased]
+
+- Update dependencies.
+
+# 0.32.0 [2021-04-13]
+
+- Update to `yamux` `v0.9.0` [PR
+  1960](https://github.com/libp2p/rust-libp2p/pull/1960).
+
+# 0.31.0 [2021-03-17]
+
+- Update `libp2p-core`.
+
+# 0.30.1 [2021-02-17]
+
+- Update `yamux` to `0.8.1`.
+
+# 0.30.0 [2021-01-12]
+
+- Update dependencies.
+
+# 0.29.0 [2020-12-17]
+
+- Update `libp2p-core`.
+
+# 0.28.0 [2020-11-25]
+
+- Update `libp2p-core`.
+
+# 0.27.0 [2020-11-09]
+
+- Tweak the naming in the `MplexConfig` API for better
+  consistency with `libp2p-mplex`.
+  [PR 1822](https://github.com/libp2p/rust-libp2p/pull/1822).
+
+- Update dependencies.
+
+# 0.26.0 [2020-10-16]
+
+- Update `libp2p-core`.
+
 # 0.25.0 [2020-09-09]
 
 - Update to `yamux-0.8.0`. Upgrade step 4 of 4. This version always implements

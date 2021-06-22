@@ -109,6 +109,10 @@ impl Transport for $uds_config {
             Err(TransportError::MultiaddrNotSupported(addr))
         }
     }
+
+    fn address_translation(&self, _server: &Multiaddr, _observed: &Multiaddr) -> Option<Multiaddr> {
+        None
+    }
 }
 
 };
@@ -136,23 +140,20 @@ codegen!(
 /// paths.
 // This type of logic should probably be moved into the multiaddr package
 fn multiaddr_to_path(addr: &Multiaddr) -> Result<PathBuf, ()> {
-    let mut iter = addr.iter();
-    let path = iter.next();
-
-    if iter.next().is_some() {
-        return Err(());
+    let mut protocols = addr.iter();
+    match protocols.next() {
+        Some(Protocol::Unix(ref path)) => {
+            let path = PathBuf::from(path.as_ref());
+            if !path.is_absolute() {
+                return Err(())
+            }
+            match protocols.next() {
+                None | Some(Protocol::P2p(_)) => Ok(path),
+                Some(_) => Err(())
+            }
+        }
+        _ => Err(())
     }
-
-    let out: PathBuf = match path {
-        Some(Protocol::Unix(ref path)) => path.as_ref().into(),
-        _ => return Err(())
-    };
-
-    if !out.is_absolute() {
-        return Err(());
-    }
-
-    Ok(out)
 }
 
 #[cfg(all(test, feature = "async-std"))]

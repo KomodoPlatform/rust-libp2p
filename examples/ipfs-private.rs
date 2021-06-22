@@ -34,17 +34,19 @@
 use async_std::{io, task};
 use futures::{future, prelude::*};
 use libp2p::{
-    core::{either::EitherTransport, transport::upgrade::Version, StreamMuxer},
+    core::{
+        either::EitherTransport, muxing::StreamMuxerBox, transport, transport::upgrade::Version,
+    },
     gossipsub::{self, Gossipsub, GossipsubConfigBuilder, GossipsubEvent, MessageAuthenticity},
-    identify::{Identify, IdentifyEvent},
+    identify::{Identify, IdentifyConfig, IdentifyEvent},
     identity,
     multiaddr::Protocol,
+    noise,
     ping::{self, Ping, PingConfig, PingEvent},
     pnet::{PnetConfig, PreSharedKey},
-    noise,
-    swarm::NetworkBehaviourEventProcess,
+    swarm::{NetworkBehaviourEventProcess, SwarmEvent},
     tcp::TcpConfig,
-    yamux::Config as YamuxConfig,
+    yamux::YamuxConfig,
     Multiaddr, NetworkBehaviour, PeerId, Swarm, Transport,
 };
 use std::{
@@ -61,22 +63,10 @@ use std::{
 pub fn build_transport(
     key_pair: identity::Keypair,
     psk: Option<PreSharedKey>,
-) -> impl Transport<
-    Output = (
-        PeerId,
-        impl StreamMuxer<
-                OutboundSubstream = impl Send,
-                Substream = impl Send,
-                Error = impl Into<io::Error>,
-            > + Send
-            + Sync,
-    ),
-    Error = impl Error + Send,
-    Listener = impl Send,
-    Dial = impl Send,
-    ListenerUpgrade = impl Send,
-> + Clone {
-    let noise_keys = noise::Keypair::<noise::X25519Spec>::new().into_authentic(&key_pair).unwrap();
+) -> transport::Boxed<(PeerId, StreamMuxerBox)> {
+    let noise_keys = noise::Keypair::<noise::X25519Spec>::new()
+        .into_authentic(&key_pair)
+        .unwrap();
     let noise_config = noise::NoiseConfig::xx(noise_keys).into_authenticated();
     let yamux_config = YamuxConfig::default();
 
@@ -92,6 +82,7 @@ pub fn build_transport(
         .authenticate(noise_config)
         .multiplex(yamux_config)
         .timeout(Duration::from_secs(20))
+        .boxed()
 }
 
 /// Get the current ipfs repo path, either from the IPFS_PATH environment variable or
@@ -169,7 +160,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let transport = build_transport(local_key.clone(), psk);
 
     // Create a Gosspipsub topic
-    let gossipsub_topic = gossipsub::Topic::new("chat".into());
+    let gossipsub_topic = gossipsub::IdentTopic::new("chat");
 
     // We create a custom network behaviour that combines gossipsub, ping and identify.
     #[derive(NetworkBehaviour)]
@@ -190,7 +181,11 @@ fn main() -> Result<(), Box<dyn Error>> {
         // Called when `gossipsub` produces an event.
         fn inject_event(&mut self, event: GossipsubEvent) {
             match event {
-                GossipsubEvent::Message(peer_id, id, message) => println!(
+                GossipsubEvent::Message {
+                    propagation_source: peer_id,
+                    message_id: id,
+                    message,
+                } => println!(
                     "Got message: {} with id: {} from peer: {:?}",
                     String::from_utf8_lossy(&message.data),
                     id,
@@ -240,28 +235,32 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     // Create a Swarm to manage peers and events
     let mut swarm = {
-        let gossipsub_config = GossipsubConfigBuilder::new()
+        let gossipsub_config = GossipsubConfigBuilder::default()
             .max_transmit_size(262144)
-            .build();
+            .build()
+            .expect("valid config");
         let mut behaviour = MyBehaviour {
-            gossipsub: Gossipsub::new(MessageAuthenticity::Signed(local_key.clone()), gossipsub_config),
-            identify: Identify::new(
+            gossipsub: Gossipsub::new(
+                MessageAuthenticity::Signed(local_key.clone()),
+                gossipsub_config,
+            )
+            .expect("Valid configuration"),
+            identify: Identify::new(IdentifyConfig::new(
                 "/ipfs/0.1.0".into(),
-                "rust-ipfs-example".into(),
                 local_key.public(),
-            ),
+            )),
             ping: Ping::new(PingConfig::new()),
         };
 
         println!("Subscribing to {:?}", gossipsub_topic);
-        behaviour.gossipsub.subscribe(gossipsub_topic.clone());
-        Swarm::new(transport, behaviour, local_peer_id.clone())
+        behaviour.gossipsub.subscribe(&gossipsub_topic).unwrap();
+        Swarm::new(transport, behaviour, local_peer_id)
     };
 
     // Reach out to other nodes if specified
     for to_dial in std::env::args().skip(1) {
         let addr: Multiaddr = parse_legacy_multiaddr(&to_dial)?;
-        Swarm::dial_addr(&mut swarm, addr)?;
+        swarm.dial_addr(addr)?;
         println!("Dialed {:?}", to_dial)
     }
 
@@ -269,16 +268,16 @@ fn main() -> Result<(), Box<dyn Error>> {
     let mut stdin = io::BufReader::new(io::stdin()).lines();
 
     // Listen on all interfaces and whatever port the OS assigns
-    Swarm::listen_on(&mut swarm, "/ip4/0.0.0.0/tcp/0".parse()?)?;
+    swarm.listen_on("/ip4/0.0.0.0/tcp/0".parse()?)?;
 
     // Kick it off
-    let mut listening = false;
     task::block_on(future::poll_fn(move |cx: &mut Context<'_>| {
         loop {
             if let Err(e) = match stdin.try_poll_next_unpin(cx)? {
-                Poll::Ready(Some(line)) => {
-                    swarm.gossipsub.publish(&gossipsub_topic, line.as_bytes())
-                }
+                Poll::Ready(Some(line)) => swarm
+                    .behaviour_mut()
+                    .gossipsub
+                    .publish(gossipsub_topic.clone(), line.as_bytes()),
                 Poll::Ready(None) => panic!("Stdin closed"),
                 Poll::Pending => break,
             } {
@@ -287,17 +286,13 @@ fn main() -> Result<(), Box<dyn Error>> {
         }
         loop {
             match swarm.poll_next_unpin(cx) {
-                Poll::Ready(Some(event)) => println!("{:?}", event),
-                Poll::Ready(None) => return Poll::Ready(Ok(())),
-                Poll::Pending => {
-                    if !listening {
-                        for addr in Swarm::listeners(&swarm) {
-                            println!("Address {}/ipfs/{}", addr, local_peer_id);
-                            listening = true;
-                        }
+                Poll::Ready(Some(event)) => {
+                    if let SwarmEvent::NewListenAddr(addr) = event {
+                        println!("Listening on {:?}", addr);
                     }
-                    break;
                 }
+                Poll::Ready(None) => return Poll::Ready(Ok(())),
+                Poll::Pending => break,
             }
         }
         Poll::Pending

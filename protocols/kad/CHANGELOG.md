@@ -1,4 +1,70 @@
-# 0.23.1 [unreleased]
+# 0.31.0 [unreleased]
+
+- Update dependencies.
+
+# 0.30.0 [2021-04-13]
+
+- Update `libp2p-swarm`.
+
+# 0.29.0 [2021-03-17]
+
+- Add `KademliaCaching` and `KademliaConfig::set_caching` to configure
+  whether Kademlia should track, in lookups, the closest nodes to a key
+  that did not return a record, via `GetRecordOk::cache_candidates`.
+  As before, if a lookup used a quorum of 1, these candidates will
+  automatically be sent the found record. Otherwise, with a lookup
+  quorum of > 1, the candidates can be used with `Kademlia::put_record_to`
+  after selecting one of the return records to cache. As is the current
+  behaviour, caching is enabled by default with a `max_peers` of 1, i.e.
+  it only tracks the closest node to the key that did not return a record.
+
+- Add `Kademlia::put_record_to` for storing a record at specific nodes,
+  e.g. for write-back caching after a successful read with quorum > 1.
+
+- Update `libp2p-swarm`.
+
+- Update dependencies.
+
+# 0.28.1 [2021-02-15]
+
+- Update dependencies.
+
+# 0.28.0 [2021-01-12]
+
+- Update dependencies.
+
+# 0.27.1 [2021-01-11]
+
+- Add From impls for `kbucket::Key`.
+  [PR 1909](https://github.com/libp2p/rust-libp2p/pull/1909).
+
+# 0.27.0 [2020-12-17]
+
+- Update `libp2p-core` and `libp2p-swarm`.
+
+# 0.26.0 [2020-11-25]
+
+- Update `libp2p-core` and `libp2p-swarm`.
+
+- Have two `ProviderRecord`s be equal iff their `key` and `provider` fields are
+  equal. [PR 1850](https://github.com/libp2p/rust-libp2p/pull/1850/).
+
+# 0.25.0 [2020-11-09]
+
+- Upon newly established connections, delay routing table
+  updates until after the configured protocol name has
+  been confirmed by the connection handler, i.e. until
+  after at least one substream has been successfully
+  negotiated. In configurations with different protocol names,
+  this avoids undesirable nodes being included in the
+  local routing table at least temporarily.
+  [PR 1821](https://github.com/libp2p/rust-libp2p/pull/1821).
+
+- Update dependencies.
+
+# 0.24.0 [2020-10-16]
+
+- Update `libp2p-core` and `libp2p-swarm`.
 
 - Update `sha2` dependency.
 

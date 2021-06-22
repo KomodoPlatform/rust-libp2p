@@ -148,7 +148,7 @@ impl ClosestPeersIter {
             return false
         }
 
-        let key = Key::from(peer.clone());
+        let key = Key::from(*peer);
         let distance = key.distance(&self.target);
 
         // Mark the peer as succeeded.
@@ -222,7 +222,7 @@ impl ClosestPeersIter {
             return false
         }
 
-        let key = Key::from(peer.clone());
+        let key = Key::from(*peer);
         let distance = key.distance(&self.target);
 
         match self.closest_peers.entry(distance) {
@@ -466,15 +466,14 @@ enum PeerState {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use libp2p_core::PeerId;
+    use libp2p_core::{PeerId, multihash::{Code, Multihash}};
     use quickcheck::*;
-    use multihash::Multihash;
     use rand::{Rng, rngs::StdRng, SeedableRng};
     use std::{iter, time::Duration};
 
     fn random_peers<R: Rng>(n: usize, g: &mut R) -> Vec<PeerId> {
         (0 .. n).map(|_| PeerId::from_multihash(
-            multihash::wrap(multihash::Code::Sha2_256, &g.gen::<[u8; 32]>())
+            Multihash::wrap(Code::Sha2_256.into(), &g.gen::<[u8; 32]>()).unwrap()
         ).unwrap()).collect()
     }
 

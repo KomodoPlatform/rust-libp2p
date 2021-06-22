@@ -18,6 +18,7 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 // DEALINGS IN THE SOFTWARE.
 
+use crate::{AddressScore, AddressRecord};
 use crate::protocols_handler::{IntoProtocolsHandler, ProtocolsHandler};
 use libp2p_core::{ConnectedPoint, Multiaddr, PeerId, connection::{ConnectionId, ListenerId}};
 use std::{error, task::Context, task::Poll};
@@ -81,21 +82,21 @@ pub trait NetworkBehaviour: Send + 'static {
     /// address should be the most likely to be reachable.
     fn addresses_of_peer(&mut self, peer_id: &PeerId) -> Vec<Multiaddr>;
 
-    /// Indicates the behaviour that we connected to the node with the given peer id.
+    /// Indicate to the behaviour that we connected to the node with the given peer id.
     ///
     /// This node now has a handler (as spawned by `new_handler`) running in the background.
     ///
-    /// This method is only called when the connection to the peer is
-    /// established, preceded by `inject_connection_established`.
+    /// This method is only called when the first connection to the peer is established, preceded by
+    /// [`inject_connection_established`](NetworkBehaviour::inject_connection_established).
     fn inject_connected(&mut self, peer_id: &PeerId);
 
-    /// Indicates the behaviour that we disconnected from the node with the given peer id.
+    /// Indicates to the behaviour that we disconnected from the node with the given peer id.
     ///
     /// There is no handler running anymore for this node. Any event that has been sent to it may
     /// or may not have been processed by the handler.
     ///
-    /// This method is only called when the last established connection to the peer
-    /// is closed, preceded by `inject_connection_closed`.
+    /// This method is only called when the last established connection to the peer is closed,
+    /// preceded by [`inject_connection_closed`](NetworkBehaviour::inject_connection_closed).
     fn inject_disconnected(&mut self, peer_id: &PeerId);
 
     /// Informs the behaviour about a newly established connection to a peer.
@@ -146,17 +147,17 @@ pub trait NetworkBehaviour: Send + 'static {
     fn inject_dial_failure(&mut self, _peer_id: &PeerId) {
     }
 
+    /// Indicates to the behaviour that a new listener was created.
+    fn inject_new_listener(&mut self, _id: ListenerId) {
+    }
+
     /// Indicates to the behaviour that we have started listening on a new multiaddr.
-    fn inject_new_listen_addr(&mut self, _addr: &Multiaddr) {
+    fn inject_new_listen_addr(&mut self, _id: ListenerId, _addr: &Multiaddr) {
     }
 
-    /// Indicates to the behaviour that a new multiaddr we were listening on has expired,
+    /// Indicates to the behaviour that a multiaddr we were listening on has expired,
     /// which means that we are no longer listening in it.
-    fn inject_expired_listen_addr(&mut self, _addr: &Multiaddr) {
-    }
-
-    /// Indicates to the behaviour that we have discovered a new external address for us.
-    fn inject_new_external_addr(&mut self, _addr: &Multiaddr) {
+    fn inject_expired_listen_addr(&mut self, _id: ListenerId, _addr: &Multiaddr) {
     }
 
     /// A listener experienced an error.
@@ -165,6 +166,14 @@ pub trait NetworkBehaviour: Send + 'static {
 
     /// A listener closed.
     fn inject_listener_closed(&mut self, _id: ListenerId, _reason: Result<(), &std::io::Error>) {
+    }
+
+    /// Indicates to the behaviour that we have discovered a new external address for us.
+    fn inject_new_external_addr(&mut self, _addr: &Multiaddr) {
+    }
+
+    /// Indicates to the behaviour that an external address was removed.
+    fn inject_expired_external_addr(&mut self, _addr: &Multiaddr) {
     }
 
     /// Polls for things that swarm should do.
@@ -182,7 +191,7 @@ pub trait PollParameters {
     /// Iterator returned by [`listened_addresses`](PollParameters::listened_addresses).
     type ListenedAddressesIter: ExactSizeIterator<Item = Multiaddr>;
     /// Iterator returned by [`external_addresses`](PollParameters::external_addresses).
-    type ExternalAddressesIter: ExactSizeIterator<Item = Multiaddr>;
+    type ExternalAddressesIter: ExactSizeIterator<Item = AddressRecord>;
 
     /// Returns the list of protocol the behaviour supports when a remote negotiates a protocol on
     /// an inbound substream.
@@ -217,7 +226,7 @@ pub trait NetworkBehaviourEventProcess<TEvent> {
 /// in whose context it is executing.
 ///
 /// [`Swarm`]: super::Swarm
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub enum NetworkBehaviourAction<TInEvent, TOutEvent> {
     /// Instructs the `Swarm` to return an event when it is being polled.
     GenerateEvent(TOutEvent),
@@ -263,14 +272,15 @@ pub enum NetworkBehaviourAction<TInEvent, TOutEvent> {
     NotifyHandler {
         /// The peer for whom a `ProtocolsHandler` should be notified.
         peer_id: PeerId,
-        /// The ID of the connection whose `ProtocolsHandler` to notify.
+        /// The options w.r.t. which connection handler to notify of the event.
         handler: NotifyHandler,
         /// The event to send.
         event: TInEvent,
     },
 
-    /// Informs the `Swarm` about a multi-address observed by a remote for
-    /// the local node.
+    /// Informs the `Swarm` about an address observed by a remote for
+    /// the local node by which the local node is supposedly publicly
+    /// reachable.
     ///
     /// It is advisable to issue `ReportObservedAddr` actions at a fixed frequency
     /// per node. This way address information will be more accurate over time
@@ -278,6 +288,10 @@ pub enum NetworkBehaviourAction<TInEvent, TOutEvent> {
     ReportObservedAddr {
         /// The observed address of the local node.
         address: Multiaddr,
+        /// The score to associate with this observation, i.e.
+        /// an indicator for the trusworthiness of this address
+        /// relative to other observed addresses.
+        score: AddressScore,
     },
 
     /// Instructs the `Swarm` to initiate a graceful close of the connection
@@ -306,8 +320,8 @@ impl<TInEvent, TOutEvent> NetworkBehaviourAction<TInEvent, TOutEvent> {
                     handler,
                     event: f(event)
                 },
-            NetworkBehaviourAction::ReportObservedAddr { address } =>
-                NetworkBehaviourAction::ReportObservedAddr { address },
+            NetworkBehaviourAction::ReportObservedAddr { address, score } =>
+                NetworkBehaviourAction::ReportObservedAddr { address, score },
             NetworkBehaviourAction::DisconnectPeer { peer_id, handler } =>
                 NetworkBehaviourAction::DisconnectPeer { peer_id, handler },
         }
@@ -324,23 +338,21 @@ impl<TInEvent, TOutEvent> NetworkBehaviourAction<TInEvent, TOutEvent> {
                 NetworkBehaviourAction::DialPeer { peer_id, condition },
             NetworkBehaviourAction::NotifyHandler { peer_id, handler, event } =>
                 NetworkBehaviourAction::NotifyHandler { peer_id, handler, event },
-            NetworkBehaviourAction::ReportObservedAddr { address } =>
-                NetworkBehaviourAction::ReportObservedAddr { address },
+            NetworkBehaviourAction::ReportObservedAddr { address, score } =>
+                NetworkBehaviourAction::ReportObservedAddr { address, score },
             NetworkBehaviourAction::DisconnectPeer { peer_id, handler } =>
                 NetworkBehaviourAction::DisconnectPeer { peer_id, handler },
         }
     }
 }
 
-/// The options w.r.t. which connection handlers to notify of an event.
+/// The options w.r.t. which connection handler to notify of an event.
 #[derive(Debug, Clone)]
 pub enum NotifyHandler {
     /// Notify a particular connection handler.
     One(ConnectionId),
     /// Notify an arbitrary connection handler.
     Any,
-    /// Notify all connection handlers.
-    All
 }
 
 /// The available conditions under which a new dialing attempt to

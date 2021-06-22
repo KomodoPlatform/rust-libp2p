@@ -101,7 +101,7 @@ pub struct DialFuture {
 
 impl DialFuture {
     fn new(port: NonZeroU64) -> Option<Self> {
-        let sender = HUB.get(&port)?.clone();
+        let sender = HUB.get(&port)?;
 
         let (_dial_port_channel, dial_port) = HUB.register_port(0)
             .expect("there to be some random unoccupied port.");
@@ -191,6 +191,10 @@ impl Transport for MemoryTransport {
 
         DialFuture::new(port).ok_or(TransportError::Other(MemoryTransportError::Unreachable))
     }
+
+    fn address_translation(&self, _server: &Multiaddr, _observed: &Multiaddr) -> Option<Multiaddr> {
+        None
+    }
 }
 
 /// Error that can be produced from the `MemoryTransport`.
@@ -259,19 +263,14 @@ impl Drop for Listener {
 
 /// If the address is `/memory/n`, returns the value of `n`.
 fn parse_memory_addr(a: &Multiaddr) -> Result<u64, ()> {
-    let mut iter = a.iter();
-
-    let port = if let Some(Protocol::Memory(port)) = iter.next() {
-        port
-    } else {
-        return Err(());
-    };
-
-    if iter.next().is_some() {
-        return Err(());
+    let mut protocols = a.iter();
+    match protocols.next() {
+        Some(Protocol::Memory(port)) => match protocols.next() {
+            None | Some(Protocol::P2p(_)) => Ok(port),
+            _ => Err(())
+        }
+        _ => Err(())
     }
-
-    Ok(port)
 }
 
 /// A channel represents an established, in-memory, logical connection between two endpoints.
