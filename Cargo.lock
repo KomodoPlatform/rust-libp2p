@@ -3342,7 +3342,7 @@ dependencies = [
  "libp2p-identity",
  "libp2p-swarm",
  "libp2p-yamux",
- "rcgen",
+ "rcgen 0.13.0",
  "ring 0.16.20",
  "rustls 0.21.9",
  "rustls-webpki",
@@ -3395,7 +3395,7 @@ dependencies = [
  "multihash",
  "quickcheck",
  "rand 0.8.5",
- "rcgen",
+ "rcgen 0.13.0",
  "serde",
  "stun",
  "thiserror",
@@ -3463,7 +3463,7 @@ dependencies = [
  "libp2p-tcp",
  "parking_lot",
  "pin-project-lite",
- "rcgen",
+ "rcgen 0.13.0",
  "rw-stream-sink",
  "soketto",
  "tracing",
@@ -4719,6 +4719,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "rcgen"
+version = "0.13.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "aa96feb4d337a43eae1b39b6d4cafc2860a46cf9cec6f1e65294244ece65e348"
+dependencies = [
+ "pem",
+ "ring 0.17.5",
+ "rustls-pki-types",
+ "time",
+ "yasna",
+]
+
+[[package]]
 name = "redis"
 version = "0.23.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5133,6 +5146,12 @@ checksum = "2d3987094b1d07b653b7dfdc3f70ce9a1da9c51ac18c1b06b662e4f9a0e9f4b2"
 dependencies = [
  "base64 0.21.7",
 ]
+
+[[package]]
+name = "rustls-pki-types"
+version = "1.4.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ecd36cc4259e3e4514335c4a138c6b43171a8d61d8f5c9348f9fc7529416f247"
 
 [[package]]
 name = "rustls-webpki"
@@ -6547,7 +6566,7 @@ dependencies = [
  "log",
  "pem",
  "rand 0.8.5",
- "rcgen",
+ "rcgen 0.11.3",
  "regex",
  "ring 0.16.20",
  "rtcp",
@@ -6611,7 +6630,7 @@ dependencies = [
  "pem",
  "rand 0.8.5",
  "rand_core 0.6.4",
- "rcgen",
+ "rcgen 0.11.3",
  "ring 0.16.20",
  "rustls 0.21.9",
  "sec1",
