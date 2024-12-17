@@ -20,9 +20,7 @@
 
 use std::{
     cmp::{max, Ordering},
-    collections::HashSet,
-    collections::{hash_map::Entry, VecDeque},
-    collections::{BTreeSet, HashMap},
+    collections::{hash_map::Entry, BTreeSet, HashMap, HashSet, VecDeque},
     fmt,
     net::IpAddr,
     task::{Context, Poll},
@@ -2070,6 +2068,7 @@ where
 
                     // remove topic from the peer_topics mapping
                     subscribed_topics.remove(topic_hash);
+
                     unsubscribed_peers.push((*propagation_source, topic_hash.clone()));
                     // generate an unsubscribe event to be polled
                     application_event.push(ToSwarm::GenerateEvent(Event::Unsubscribed {
@@ -2079,8 +2078,13 @@ where
                 }
             }
 
+            let peer_list_len = peer_list.len();
+            if peer_list_len == 0 {
+                self.topic_peers.remove(topic_hash);
+            }
+
             if let Some(m) = self.metrics.as_mut() {
-                m.set_topic_peers(topic_hash, peer_list.len());
+                m.set_topic_peers(topic_hash, peer_list_len);
             }
         }
 
@@ -3336,6 +3340,11 @@ where
             // NOTE: It is possible the peer has already been removed from all mappings if it does not
             // support the protocol.
             self.peer_topics.remove(&peer_id);
+
+            self.topic_peers.retain(|_, peers| {
+                peers.remove(&peer_id);
+                !peers.is_empty()
+            });
 
             // If metrics are enabled, register the disconnection of a peer based on its protocol.
             if let Some(metrics) = self.metrics.as_mut() {
