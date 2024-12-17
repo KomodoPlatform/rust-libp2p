@@ -3337,6 +3337,11 @@ where
             // support the protocol.
             self.peer_topics.remove(&peer_id);
 
+            self.topic_peers.retain(|_, peers| {
+                peers.remove(&peer_id);
+                !peers.is_empty()
+            });
+
             // If metrics are enabled, register the disconnection of a peer based on its protocol.
             if let Some(metrics) = self.metrics.as_mut() {
                 let peer_kind = &self
