@@ -20,7 +20,7 @@ libp2p-swarm = { workspace = true, features = ["async-std"] }
 libp2p-tcp = { workspace = true, features = ["async-io"] }
 libp2p-yamux = { workspace = true }
 futures = "0.3.30"
-rand = "0.8.5"
+rand = "0.9.2"
 tracing = "0.1.37"
 futures-timer = "3.0.2"
 
