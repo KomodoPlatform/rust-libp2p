@@ -117,7 +117,7 @@ libp2p-websocket-websys = { version = "0.3.1", path = "transports/websocket-webs
 libp2p-webtransport-websys = { version = "0.2.0", path = "transports/webtransport-websys" }
 libp2p-yamux = { version = "0.45.1", path = "muxers/yamux" }
 multiaddr = "0.18.1"
-multihash = "0.19.1"
+multihash = "0.19.3"
 multistream-select = { version = "0.13.0", path = "misc/multistream-select" }
 prometheus-client = "0.22.1"
 quick-protobuf-codec = { version = "0.3.1", path = "misc/quick-protobuf-codec" }
