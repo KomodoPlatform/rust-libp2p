@@ -46,7 +46,7 @@ base64 = "0.21.7"
 serde_json = "1.0"
 rmp-serde = "1.1"
 criterion = "0.5"
-hex-literal = "0.4.1"
+hex-literal = "1.1.0"
 
 [[bench]]
 name = "peer_id"
