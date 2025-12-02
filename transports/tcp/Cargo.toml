@@ -27,7 +27,7 @@ tokio = ["dep:tokio", "if-watch/tokio"]
 async-io = ["dep:async-io", "if-watch/smol"]
 
 [dev-dependencies]
-async-std = { version = "1.6.5", features = ["attributes"] }
+async-std = { version = "1.13.2", features = ["attributes"] }
 libp2p-identity = { workspace = true, features = ["rand"] }
 tokio = { version = "1.36.0", default-features = false, features = ["full"] }
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }

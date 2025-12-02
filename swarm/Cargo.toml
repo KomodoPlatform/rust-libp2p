@@ -30,7 +30,7 @@ void = "1"
 wasm-bindgen-futures = { version = "0.4.41", optional = true }
 
 [target.'cfg(not(any(target_os = "emscripten", target_os = "wasi", target_os = "unknown")))'.dependencies]
-async-std = { version = "1.6.2", optional = true }
+async-std = { version = "1.13.2", optional = true }
 tokio = { version = "1.36", features = ["rt"], optional = true }
 
 [features]
@@ -40,7 +40,7 @@ async-std = ["dep:async-std"]
 wasm-bindgen = ["dep:wasm-bindgen-futures", "dep:getrandom"]
 
 [dev-dependencies]
-async-std = { version = "1.6.2", features = ["attributes"] }
+async-std = { version = "1.13.2", features = ["attributes"] }
 either = "1.9.0"
 futures = "0.3.30"
 libp2p-identify = { path = "../protocols/identify" }                # Using `path` here because this is a cyclic dev-dependency which otherwise breaks releasing.

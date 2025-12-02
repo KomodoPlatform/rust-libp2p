@@ -23,7 +23,7 @@ tracing = "0.1.37"
 void = "1.0"
 
 [dev-dependencies]
-async-std = "1.6.2"
+async-std = "1.13.2"
 libp2p-swarm = { workspace = true, features = ["macros"] }
 libp2p-swarm-test = { path = "../../swarm-test" }
 quickcheck = { workspace = true }

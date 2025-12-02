@@ -33,7 +33,7 @@ cbor = ["dep:serde", "dep:cbor4ii", "libp2p-swarm/macros"]
 
 [dev-dependencies]
 anyhow = "1.0.80"
-async-std = { version = "1.6.2", features = ["attributes"] }
+async-std = { version = "1.13.2", features = ["attributes"] }
 libp2p-noise = { workspace = true }
 libp2p-tcp = { workspace = true, features = ["async-io"] }
 libp2p-yamux = { workspace = true }

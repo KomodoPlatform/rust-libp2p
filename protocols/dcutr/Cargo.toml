@@ -28,7 +28,7 @@ lru = "0.12.1"
 futures-bounded = { workspace = true }
 
 [dev-dependencies]
-async-std = { version = "1.12.0", features = ["attributes"] }
+async-std = { version = "1.13.2", features = ["attributes"] }
 clap = { version = "4.4.16", features = ["derive"] }
 libp2p-dns = { workspace = true, features = ["async-std"] }
 libp2p-identify = { workspace = true }
