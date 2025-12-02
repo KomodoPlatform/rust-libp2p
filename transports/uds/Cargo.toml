@@ -11,7 +11,7 @@ keywords = ["peer-to-peer", "libp2p", "networking"]
 categories = ["network-programming", "asynchronous"]
 
 [dependencies]
-async-std = { version = "1.6.2", optional = true }
+async-std = { version = "1.13.2", optional = true }
 libp2p-core = { workspace = true }
 futures = "0.3.30"
 tokio = { version = "1.36", default-features = false, features = ["net"], optional = true }

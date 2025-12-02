@@ -19,7 +19,7 @@ smallvec = "1.12.0"
 unsigned-varint = { workspace = true }
 
 [dev-dependencies]
-async-std = { version = "1.6.2", features = ["attributes"] }
+async-std = { version = "1.13.2", features = ["attributes"] }
 futures_ringbuf = "0.4.0"
 quickcheck = { workspace = true }
 rand = "0.8"
