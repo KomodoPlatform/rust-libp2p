@@ -45,7 +45,7 @@ quickcheck = { workspace = true }
 base64 = "0.21.7"
 serde_json = "1.0"
 rmp-serde = "1.1"
-criterion = "0.5"
+criterion = "0.8"
 hex-literal = "0.4.1"
 
 [[bench]]
