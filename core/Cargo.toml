@@ -28,7 +28,7 @@ rand = "0.8"
 rw-stream-sink = { workspace = true }
 serde = { version = "1", optional = true, features = ["derive"] }
 smallvec = "1.12.0"
-thiserror = "1.0"
+thiserror = "2.0"
 tracing = "0.1.37"
 unsigned-varint = { workspace = true }
 void = "1"
